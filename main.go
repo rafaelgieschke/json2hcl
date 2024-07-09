@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
 
 	"github.com/hashicorp/hcl"
 	"github.com/hashicorp/hcl/hcl/printer"
@@ -70,10 +72,13 @@ func toHCL() error {
 		return fmt.Errorf("unable to parse JSON: %s", err)
 	}
 
-	err = printer.Fprint(os.Stdout, ast)
+	var buf bytes.Buffer
+	err = printer.Fprint(&buf, ast)
 	if err != nil {
 		return fmt.Errorf("unable to print HCL: %s", err)
 	}
+	re := regexp.MustCompile(`(?m:^(\s*)"([^"]+)")`)
+	os.Stdout.Write(re.ReplaceAll(buf.Bytes(), []byte("${1}${2}")))
 
 	return nil
 }
